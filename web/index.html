@@ -1,0 +1,747 @@
+<meta charset="utf-8">
+<title>Rollmarkering</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+/* Layout: projekt + klipplista | bildruta med markeringar | roller och text till Higgsfield */
+:root{
+  --bg:#F3EEE4; --panel:#FFFDF8; --ink:#14283A; --mute:#5E6B76; --line:#DED6C7;
+  --sea:#1C5674; --gold:#E3A33A; --done:#2F8A5B; --warn:#C0562F;
+  --ui:-apple-system,system-ui,sans-serif; --disp:ui-rounded,-apple-system,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1D29;--panel:#152A3A;--ink:#EDE6D8;--mute:#9DAAB4;--line:#2A4558;--sea:#6FB3D2;--gold:#F2BE5C;--done:#5BC48A;--warn:#E98260;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E1D29;--panel:#152A3A;--ink:#EDE6D8;--mute:#9DAAB4;--line:#2A4558;--sea:#6FB3D2;--gold:#F2BE5C;--done:#5BC48A;--warn:#E98260;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--ui);margin:0}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.app{display:grid;grid-template-columns:230px minmax(0,1fr) 320px;height:100%;padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+aside{background:var(--panel);min-height:0;overflow:auto}
+.list{border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.brand{padding:14px 12px 4px}.brand h1{font:600 19px/1.15 var(--disp);margin:0}
+.lf{display:flex;gap:6px;padding:5px 10px;align-items:center}
+.lf select{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 6px;font-size:13px}
+.prog{height:6px;border-radius:3px;background:var(--line);margin:6px 12px 2px;overflow:hidden}.prog i{display:block;height:100%;background:var(--done);width:0}
+.filt{display:flex;gap:4px;padding:4px 10px 8px}
+.filt button{flex:1;border:1px solid var(--line);background:transparent;border-radius:999px;padding:3px 6px;font-size:12px}
+.filt button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+#clips{overflow:auto;flex:1;padding:0 6px 8px}
+.ci{display:flex;align-items:center;gap:8px;width:100%;border:0;background:transparent;padding:5px 8px;border-radius:8px;text-align:left}
+.ci:hover{background:color-mix(in srgb,var(--sea) 10%,transparent)}
+.ci[aria-current="true"]{background:color-mix(in srgb,var(--gold) 28%,transparent)}
+.ci .n{font:700 13px var(--mono);min-width:44px}.ci .s{color:var(--mute);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--mute);flex:none}.dot.p{background:var(--gold);border-color:var(--gold)}.dot.d{background:var(--done);border-color:var(--done)}
+main{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:auto;padding:16px 20px 20px;gap:12px}
+.hd{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.hd h2{font:600 26px var(--disp);margin:0}.hd .meta{color:var(--mute);font-size:13px}
+.sv{margin:0;max-width:75ch}
+.stage{position:relative;width:100%;max-width:1100px;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;user-select:none;touch-action:none}
+.pic{width:100%;height:100%;background-repeat:no-repeat;pointer-events:none}
+.stage.arm{cursor:crosshair;outline:3px solid var(--gold);outline-offset:-3px}
+.mk{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:4px;padding:3px 8px 3px 4px;border-radius:999px;color:#fff;font:700 13px var(--mono);box-shadow:0 2px 6px rgba(0,0,0,.45);cursor:grab;border:2px solid rgba(255,255,255,.85);white-space:nowrap}
+.mk::before{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+.mk.sel{outline:3px solid var(--gold);outline-offset:1px}
+.mk.ghost{opacity:.38;pointer-events:none;border-style:dashed}
+.noimg{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px}
+.frames{display:flex;gap:8px;max-width:1100px}
+.fr{flex:1;border:2px solid transparent;border-radius:8px;padding:0;background:#000;overflow:hidden;position:relative;aspect-ratio:16/9;max-width:33%}
+.fr[aria-pressed="true"]{border-color:var(--gold)}
+.fr span{position:absolute;left:6px;bottom:4px;font:600 11px var(--ui);color:#fff;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:4px}
+.fr b{position:absolute;right:6px;top:4px;font:700 11px var(--mono);color:#14283A;background:var(--gold);padding:0 6px;border-radius:4px}
+.hint{color:var(--mute);font-size:12.5px;margin:0;max-width:90ch}
+kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px}
+.side{border-left:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:16px}
+.side h3,dialog h3{font:600 12px var(--ui);text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:0 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:3px 10px 3px 4px;font-size:12.5px}
+.chip code{font:700 11.5px var(--mono);color:#fff;border-radius:999px;padding:1px 6px}
+.chip[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 40%,transparent)}
+.chip.ok{border-color:var(--done)}.chip.no{opacity:.5;text-decoration:line-through}
+.req{display:flex;flex-direction:column;gap:6px}
+.rq{display:flex;align-items:center;gap:6px}.rq .chip{flex:1;justify-content:flex-start}
+.rq .st{font-size:11.5px;color:var(--mute);width:70px;text-align:right}
+.rq .x{border:1px solid var(--line);background:transparent;border-radius:6px;font-size:11px;padding:2px 6px;color:var(--mute)}
+.rq .x[aria-pressed="true"]{color:var(--warn);border-color:var(--warn)}
+.box{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 10px;font-weight:600;font-size:13px}
+.btn.pri{background:var(--sea);border-color:var(--sea);color:#fff}.btn.ok{background:var(--done);border-color:var(--done);color:#fff}
+.btn.sm{padding:3px 8px;font-size:12px}.btn:disabled{opacity:.45;cursor:default}
+input[type=text],input[type=number],select.in,textarea{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:5px 8px;font-size:13px;width:100%;min-width:0}
+input[type=color]{width:34px;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:1px}
+input[type=range]{accent-color:var(--sea)}
+textarea{min-height:56px;resize:vertical}
+pre{margin:0;white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font:12px/1.5 var(--mono);max-height:280px;overflow:auto}
+.status{font-size:12px;color:var(--mute);min-height:1.2em}.status.err{color:var(--warn)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);padding:0;width:min(1000px,calc(100vw - 32px));max-height:calc(100vh - 32px)}
+dialog::backdrop{background:rgba(5,12,18,.55)}
+.dlg{display:flex;flex-direction:column;max-height:calc(100vh - 34px)}
+.dlg header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.dlg header h2{font:600 20px var(--disp);margin:0}
+.dlg .body{overflow:auto;padding:14px 18px;display:flex;flex-direction:column;gap:22px}
+.fld2{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px;font-size:12.5px}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;font-weight:600;color:var(--mute);padding:4px;white-space:nowrap}
+.tbl td{padding:3px 4px;vertical-align:middle}.tbl input[type=text]{padding:3px 6px}
+.tbl .w-code{width:64px}.tbl .w-h{width:64px}
+.sheet{display:flex;align-items:center;gap:6px;min-width:220px}
+.sheet .th{width:46px;height:34px;border-radius:6px;border:1px solid var(--line);background:var(--bg) center/contain no-repeat;flex:none;cursor:zoom-in}
+.sheet .th.none{cursor:default;display:grid;place-items:center;font-size:10px;color:var(--mute)}
+.sheet input[type=text]{flex:1;min-width:90px}
+.cimg{width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid var(--line);background:#fff;flex:none}
+.sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.sheets button{border:1.5px solid var(--line);background:var(--bg);border-radius:8px;padding:4px;display:flex;flex-direction:column;gap:3px;cursor:pointer;font-size:11px;color:var(--ink);text-align:left}
+.sheets button[aria-pressed=true]{border-color:var(--sea);box-shadow:0 0 0 2px var(--sea)}
+.sheets img{width:100%;aspect-ratio:4/3;object-fit:contain;border-radius:5px;background:var(--panel)}
+.pip{position:absolute;top:10px;right:10px;width:24%;max-width:260px;background:var(--panel);border:2px solid var(--sea);border-radius:10px;padding:5px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:5;pointer-events:none;opacity:.94}
+.pip img{display:block;width:100%;max-height:200px;object-fit:contain;border-radius:6px;background:#fff}
+.pip span{display:block;font-size:11.5px;padding:4px 2px 0}
+#dlgImg{width:min(1200px,calc(100vw - 32px))}
+#dlgImg img{display:block;width:100%;max-height:calc(100vh - 140px);object-fit:contain;background:var(--bg)}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;flex:1;min-width:120px}.bar i{display:block;height:100%;width:0;background:var(--sea)}
+video.pv{width:240px;border-radius:8px;background:#000}
+@media (max-width:1000px){
+  .app{grid-template-columns:1fr;height:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .list{border:0;max-height:260px;background:transparent}
+  main{padding:8px 0;overflow:visible}
+  .side{border:0;background:transparent;padding:8px 0 24px;overflow:visible}
+  .tbl{display:block;overflow-x:auto}
+}
+</style>
+
+<div class="app">
+  <aside class="list">
+    <div class="brand"><h1>Rollmarkering</h1></div>
+    <div class="lf"><select id="proj" aria-label="Projekt"></select><button class="btn sm" id="bProj">Projekt…</button></div>
+    <div class="prog"><i id="progbar"></i></div>
+    <div class="lf"><span class="hint" id="prog"></span></div>
+    <div class="filt" role="group" aria-label="Visa klipp"><button id="fAll" aria-pressed="true">Alla</button><button id="fTodo" aria-pressed="false">Ej klara</button></div>
+    <div id="clips"></div>
+  </aside>
+
+  <main>
+    <div class="hd"><h2 id="cid">Rollmarkering</h2><span class="meta" id="cmeta"></span></div>
+    <p class="sv" id="csv"></p>
+    <div class="stage" id="stage"><div class="pic" id="big" role="img"></div><div class="pip" id="pip" hidden></div>
+      <div class="noimg" id="noimg" hidden><b style="font:600 20px var(--disp)" id="noimgT">Ingen bild för klippet</b><span id="noimgS">Lägg in animaticen eller bilder under Projekt… → Material.</span><button class="btn pri" id="bNoimg">Öppna Projekt…</button></div>
+    </div>
+    <div class="frames" id="frames"></div>
+    <p class="hint">Välj en roll till höger och klicka på figuren i bilden. Dra en markering för att flytta den. Markera samma roll i flera bildrutor så beskriver texten hur den rör sig. <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> byter bildruta, <kbd>Delete</kbd> tar bort vald markering, <kbd>Enter</kbd> markerar klart och går vidare.</p>
+  </main>
+
+  <aside class="side" id="side">
+    <section id="sheetSec" hidden><h3>Sheets</h3><div class="sheets" id="sheets"></div>
+      <p class="hint" style="margin-top:6px">Klicka på en sheet för att välja rollen, klicka sedan på den i bilden. Dubbelklicka för att se sheeten stor.</p></section>
+    <section><h3>Ska vara med enligt manus</h3><div class="req" id="req"></div></section>
+    <section><h3>Lägg till fler</h3><div id="pal"></div></section>
+    <section class="box" id="selbox" hidden><h3>Vald markering</h3><div id="selinfo"></div><div class="row"><button class="btn" id="delMk">Ta bort</button></div></section>
+    <section>
+      <h3>Till Higgsfield</h3>
+      <pre id="out"></pre>
+      <div class="row" style="margin-top:8px"><button class="btn pri" id="bCopy">Kopiera CAST MAP</button></div>
+      <p class="hint" style="margin-top:6px" id="outHint">Klistra in i Seedance-prompten före ACTION. @Video1 är klippets animatic, @Image1 startbilden, sedan referensbilderna i den ordning texten anger.</p>
+    </section>
+    <section><h3>Anteckning</h3><textarea id="note" placeholder="T.ex. ”Lilla fisken kommer in från höger i slutet”"></textarea></section>
+    <section class="row"><button class="btn" id="copyPrev">Kopiera från förra klippet</button><button class="btn" id="clearAll">Rensa klippet</button></section>
+    <section class="row"><button class="btn" id="prevB">← Förra</button><button class="btn ok" id="doneB">Klar → nästa</button></section>
+    <div class="status" id="status"></div>
+  </aside>
+</div>
+
+<dialog id="dlgImg"><div class="dlg">
+  <header><h2 id="iTitle">Sheet</h2><button class="btn" id="iClose">Stäng</button></header>
+  <img id="iImg" alt="">
+</div></dialog>
+<input type="file" id="imgPick" accept="image/*" hidden>
+<dialog id="dlg"><div class="dlg">
+  <header><h2>Projekt</h2><button class="btn" id="dClose">Stäng</button></header>
+  <div class="body">
+    <section class="row">
+      <div class="fld2" style="flex:1;min-width:260px"><label for="dName">Projektnamn</label><input type="text" id="dName"></div>
+      <button class="btn" id="dNew">Nytt projekt</button>
+      <button class="btn" id="dExport">Exportera</button>
+      <label class="btn" style="cursor:pointer">Importera<input type="file" id="dImport" accept=".json,application/json" hidden></label>
+      <button class="btn" id="dScen">Till Scenplanering</button>
+      <button class="btn" id="dDelProj">Radera projektet</button>
+    </section>
+    <section class="row" id="dFolderRow" hidden>
+      <span class="hint">Projekten sparas som filer i <b id="dFolder"></b></span>
+      <button class="btn" id="dShowFolder">Visa i Finder</button>
+      <button class="btn" id="dPickFolder">Byt mapp…</button>
+    </section>
+
+    <section>
+      <h3>Material – animatic, bildmanus eller bilder</h3>
+      <p class="hint" style="margin-bottom:8px"><b>Video:</b> välj animaticen (mp4/mov). Verktyget hittar klippbytena själv och tar tre bildrutor per klipp (början, mitten, slutet). Finns redan en klipplista med tider används den i stället. <b>Bildmanus:</b> välj bildmanusets bilder – en bild per klipp. Har filerna klippnummer i namnet används det, annars läggs de i filnamnsordning på klipplistan. <b>Bilder:</b> välj en eller flera bilder per klipp. Filnamnet ska innehålla klippets nummer, t.ex. <code>klipp_012.jpg</code> eller <code>012_1.png</code>.</p>
+      <div class="row">
+        <label class="btn pri" style="cursor:pointer">Välj video…<input type="file" id="mVideo" accept="video/*" hidden></label>
+        <label class="btn" style="cursor:pointer">Välj bildmanus…<input type="file" id="mBoard" accept="image/*" multiple hidden></label>
+        <label class="btn" style="cursor:pointer">Välj bilder…<input type="file" id="mImgs" accept="image/*" multiple hidden></label>
+        <label class="hint" for="mSens">Gräns för klippbyte (lägre = fler klipp)</label><input type="range" id="mSens" min="6" max="50" value="22" style="width:120px"><output class="hint" id="oSens">22</output>
+        <label class="hint"><input type="checkbox" id="mUseList"> Använd klipplistans tider</label>
+      </div>
+      <div class="row" style="margin-top:8px"><video class="pv" id="mPv" muted playsinline hidden></video><div class="bar"><i id="mBar"></i></div><span class="hint" id="mInfo"></span></div>
+    </section>
+
+    <section>
+      <h3>Roller – karaktärer, djur, fordon och props</h3>
+      <p class="hint" style="margin-bottom:6px">Koden syns på markeringen. Lägg till karaktärens eller propens sheet under <b>Sheet</b> (Bild…) – den visas bredvid bilden när du markerar. Den engelska beskrivningen och sheetens filnamn (samma bild i Higgsfield) går in i CAST MAP.</p>
+      <table class="tbl"><thead><tr><th>Kod</th><th>Namn</th><th>Engelska till prompten</th><th>Typ</th><th>Färg</th><th>Sheet</th><th>Flera</th><th></th></tr></thead><tbody id="dCast"></tbody></table>
+      <div class="row" style="margin-top:6px"><button class="btn sm" id="dAddCast">+ Roll</button>
+        <div class="fld2" style="flex:1;min-width:280px;grid-template-columns:auto 1fr"><label for="dGroups">Grupper</label><input type="text" id="dGroups" placeholder="t.ex. CREW = C1, C2, C3, C4"></div></div>
+    </section>
+
+    <section>
+      <h3>Klipp</h3>
+      <p class="hint" style="margin-bottom:6px">En rad per klipp: <code>id | beskrivning | koder | ljus | start–slut i sekunder</code>. Koderna skrivs med komma, t.ex. <code>F, RB</code>. Bilder och markeringar behålls när id:t finns kvar.</p>
+      <textarea id="dClips" rows="8" style="font:12px/1.5 var(--mono)"></textarea>
+      <div class="row" style="margin-top:6px"><button class="btn pri" id="dApply">Uppdatera klipplistan</button><span class="hint" id="dInfo"></span></div>
+    </section>
+  </div>
+</div></dialog>
+
+<script>window.SEED=null;</script>
+<script>
+const $ = id => document.getElementById(id);
+const clone = o => JSON.parse(JSON.stringify(o));
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const slug = s => (s||'projekt').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40) || 'projekt';
+const uid = () => Math.random().toString(36).slice(2,8);
+// ---------- sheets ----------
+// d.img för en roll: 'lokal:<sökväg>' (Mac-programmet), 32 hex (claude.ai-lagringen) eller en data:-adress (annars).
+const sheetSrc = v => !v ? '' : /^[0-9a-f]{32}$/.test(v) ? '/_blob/' + v : v.startsWith('lokal:') ? 'bild://lokal/' + v.slice(6) : v;
+const toB64 = blob => new Promise(ok => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.readAsDataURL(blob); });
+const toDataURL = blob => new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(blob); });
+function shrink(blob, max){
+  return new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(blob);
+    im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width*k); c.height = Math.round(im.height*k);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); ok(c.toDataURL('image/jpeg', 0.85)); };
+    im.onerror = () => { URL.revokeObjectURL(u); no(new Error('Bilden kunde inte läsas.')); }; im.src = u; });
+}
+async function putSheet(blob, name){
+  if (NATIVE){ const m = (name||'sheet').match(/^(.*?)(?:\.([a-z0-9]{2,5}))?$/i); return 'lokal:' + await native('writeImage', {project:pid, name:'sheet_' + (m[1] || 'bild'), ext:(m[2] || 'jpg').toLowerCase(), b64:await toB64(blob)}); }
+  if (assets?.upload){ try { return (await assets.upload(blob, {type:blob.type || 'image/png'})).id; } catch {} }
+  return shrink(blob, 1400);
+}
+async function embedSheets(cast){
+  const out = JSON.parse(JSON.stringify(cast||{}));
+  for (const d of Object.values(out)){
+    if (!d.img || d.img.startsWith('data:')) continue;
+    if (NATIVE && d.img.startsWith('lokal:')){ try { d.img = await native('readImage', {path:d.img.slice(6)}); } catch { delete d.img; } continue; }
+    try { d.img = await toDataURL(await (await fetch(sheetSrc(d.img))).blob()); } catch { delete d.img; }
+  }
+  return out;
+}
+async function storeEmbedded(cast){
+  if (!NATIVE && !assets?.upload) return;
+  for (const d of Object.values(cast||{})){ if (!d.img?.startsWith('data:')) continue; try { d.img = await putSheet(await (await fetch(d.img)).blob(), d.ref || 'sheet.jpg'); } catch {} }
+}
+let pickFor = null;
+function pickImage(fn){ pickFor = fn; $('imgPick').value = ''; $('imgPick').click(); }
+function showImage(src, title){ $('iImg').src = src; $('iTitle').textContent = title || 'Sheet'; $('dlgImg').showModal(); }
+
+// Samma rolltyper som Scenplanering, så att projekt kan flyttas mellan verktygen.
+const KINDS = {h:['Människa',1.8], q:['Fyrbent djur',0.6], f:['Fisk',0.4], g:['Fågel',0.35], rb:['Liten båt',4], wb:['Stor båt',15], wbx:['Kantrad båt',15], car:['Bil',4.2], rod:['Spö/stav',2], lure:['Drag',0.28], small:['Litet föremål',0.15], bucket:['Hink',0.3], coil:['Rep/nät',0.4], crate:['Låda/föremål',0.6]};
+const VEH = ['rb','wb','wbx','car'];
+const kcol = k => k==='h' ? '#D2683E' : 'qfg'.includes(k) ? '#2C8C93' : VEH.includes(k) ? '#B8432F' : '#6E5BB0';
+const GRP = [['Karaktärer',k=>k==='h'],['Djur',k=>'qfg'.includes(k)],['Fordon',k=>VEH.includes(k)],['Props',k=>!['h','q','f','g',...VEH].includes(k)]];
+const FRN = ['Början','Mitten','Slutet'];
+
+let db = null, assets = null, projects = {}, marksAll = {}, pid = null, P = null;
+let idx = 0, frame = 0, armed = null, sel = -1, filter = 'all';
+const pend = new Set(), timers = {}, localImg = {};
+const LS = 'rollmarkering-v1';
+// I Mac-programmet sparas varje projekt som <projekt>.roll.json och bilderna i mappen <projekt>.bilder via en brygga till Swift.
+const NATIVE = !!window.webkit?.messageHandlers?.app;
+let callN = 0; const calls = {};
+window.__appReply = (id, res) => { const c = calls[id]; delete calls[id]; if (c) res.e ? c.no(new Error(res.e)) : c.ok(res.r); };
+const native = (op, args) => new Promise((ok, no) => { const id = ++callN; calls[id] = {ok, no}; window.webkit.messageHandlers.app.postMessage({id, op, ...(args||{})}); });
+const blobB64 = blob => new Promise(ok => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.readAsDataURL(blob); });
+function lsLoad(){ try { const v = JSON.parse(localStorage.getItem(LS)||'{}'); return v && typeof v==='object' ? v : {}; } catch { return {}; } }
+function lsSave(){ try { localStorage.setItem(LS, JSON.stringify({projects, marks:marksAll, pid})); } catch {} }
+function status(t, err){ const s = $('status'); s.textContent = t; s.className = 'status' + (err?' err':''); }
+const mkey = id => pid + '__' + id;
+const CL = () => P.clips;
+const cur = () => CL()[idx];
+const castOf = c => P.cast[c] || (P.groups?.[c] ? {sv:c+' (grupp)', en:'members of the group: ' + P.groups[c].map(m => P.cast[m]?.en || m).join('; '), k:'h', grp:true} : {sv:c, en:c, k:'crate'});
+const blank = () => ({marks:[], absent:[], done:false, note:''});
+const st = id => marksAll[mkey(id)] || (marksAll[mkey(id)] = blank());
+const nfOf = c => Math.max(1, Math.min(3, c.nf || 1));
+const imgUrl = c => localImg[mkey(c.id)] || (c.img ? (/^[0-9a-f]{32}$/.test(c.img) ? '/_blob/' + c.img : c.img.startsWith('lokal:') ? 'bild://lokal/' + c.img.slice(6) : c.img) : null);
+
+const writeT = {};
+function writeProject(id){
+  clearTimeout(writeT[id]);
+  writeT[id] = setTimeout(async () => {
+    if (!projects[id]) return;
+    const marks = {}; Object.keys(marksAll).filter(k => k.startsWith(id+'__')).forEach(k => marks[k.slice(id.length+2)] = marksAll[k]);
+    try { await native('write', {name:id, text:JSON.stringify({format:'rollmarkering/1', id, project:projects[id], marks}, null, 1)}); status('Sparat ' + new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})); }
+    catch(e){ status('Kunde inte spara: ' + e.message, true); }
+  }, 500);
+}
+function persist(path, data, key){
+  if (NATIVE){ const m = key.match(/^[pm]:(.+?)(?:__|$)/); if (m) writeProject(m[1]); return; }
+  pend.add(key); lsSave(); clearTimeout(timers[key]);
+  timers[key] = setTimeout(async () => {
+    if (!db){ pend.delete(key); return; }
+    try { await db.doc(path).set({...data, at:new Date().toISOString()}); status('Sparat ' + new Date().toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})); }
+    catch(e){ status('Kunde inte spara ('+(e.code||'fel')+'). Försök igen om en stund.', true); }
+    finally { setTimeout(() => pend.delete(key), 1200); }
+  }, 400);
+}
+const saveProject = () => { if (P) persist('projekt/'+pid, P, 'p:'+pid); };
+const saveMarks = id => { id = id || cur().id; const k = mkey(id); persist('markering/'+k, marksAll[k], 'm:'+k); };
+
+// ---------- lista och sidopanel ----------
+function renderProjSel(){
+  const s = $('proj'); s.innerHTML = '';
+  const ids = Object.keys(projects).sort((a,b) => (projects[a].name||a).localeCompare(projects[b].name||b, 'sv'));
+  ids.forEach(id => s.add(new Option(projects[id].name || id, id)));
+  if (!ids.length) s.add(new Option('Inga projekt', ''));
+  s.value = pid || '';
+}
+function clipState(c){ const s = marksAll[mkey(c.id)]; if (!s) return ''; if (s.done) return 'd'; return (s.marks.length || s.absent.length || s.note) ? 'p' : ''; }
+function renderList(){
+  const box = $('clips'); box.innerHTML = ''; if (!P){ $('prog').textContent = ''; $('progbar').style.width = 0; return; }
+  CL().forEach((c,i) => {
+    const k = clipState(c); if (filter==='todo' && k==='d') return;
+    const b = document.createElement('button'); b.className = 'ci'; b.setAttribute('aria-current', i===idx);
+    b.innerHTML = `<span class="dot ${k}"></span><span class="n">${esc(c.id)}</span><span class="s">${esc(c.sv || (imgUrl(c) ? '' : 'ingen bild'))}</span>`;
+    b.onclick = () => go(i); box.appendChild(b);
+  });
+  const done = CL().filter(c => marksAll[mkey(c.id)]?.done).length;
+  $('progbar').style.width = (CL().length ? 100*done/CL().length : 0) + '%';
+  $('prog').textContent = `${done} av ${CL().length} klipp klara`;
+}
+const chipIn = c => { const d = castOf(c); return `<code style="background:${kcol(d.k)}">${esc(c)}</code>${d.img ? `<img class="cimg" src="${esc(sheetSrc(d.img))}" alt="">` : ''}${esc(d.sv)}`; };
+function renderSheets(c, s){
+  const codes = [...new Set([...(c.pre||[]).flatMap(x => P.groups?.[x] || [x]), ...s.marks.map(m => m.c)])].filter(code => castOf(code).img && !s.absent.includes(code));
+  Object.keys(P.cast).forEach(code => { if (P.cast[code].img && !codes.includes(code)) codes.push(code); });
+  $('sheetSec').hidden = !codes.length;
+  const ad = armed && castOf(armed);
+  // vald rolls sheet i bildens hörn, så att man kan jämföra utan att sidopanelen hoppar
+  $('pip').hidden = !ad?.img;
+  $('pip').innerHTML = ad?.img ? `<img src="${esc(sheetSrc(ad.img))}" alt=""><span>Klicka där <b>${esc(ad.sv)}</b> är i bilden</span>` : '';
+  $('sheets').innerHTML = codes.map(code => { const d = castOf(code); return `<button data-c="${esc(code)}" aria-pressed="${armed===code}" title="Välj ${esc(d.sv)} – dubbelklicka för att se stor"><img src="${esc(sheetSrc(d.img))}" alt=""><span><b>${esc(code)}</b> ${esc(d.sv)}${s.marks.some(m => m.c===code) ? ' ✓' : ''}</span></button>`; }).join('');
+  $('sheets').querySelectorAll('button').forEach(b => { b.onclick = () => arm(b.dataset.c); b.ondblclick = () => { const d = castOf(b.dataset.c); showImage(sheetSrc(d.img), d.sv); }; });
+}
+function renderSide(){
+  const c = cur(), s = st(c.id), pre = c.pre || [];
+  renderSheets(c, s);
+  const req = $('req'); req.innerHTML = '';
+  if (!pre.length) req.innerHTML = '<p class="hint">Inga roller angivna för klippet. Lägg till dem nedan.</p>';
+  pre.forEach(code => {
+    const n = s.marks.filter(m => m.c===code).length, no = s.absent.includes(code);
+    const r = document.createElement('div'); r.className = 'rq';
+    r.innerHTML = `<button class="chip ${n?'ok':''} ${no?'no':''}" aria-pressed="${armed===code}">${chipIn(code)}</button><span class="st">${no?'inte med':n?n+' markerad'+(n>1?'e':''):'ej placerad'}</span><button class="x" aria-pressed="${no}" title="Finns inte i klippet">Inte med</button>`;
+    r.children[0].onclick = () => arm(code);
+    r.children[2].onclick = () => { s.absent = no ? s.absent.filter(x=>x!==code) : [...s.absent, code]; if (!no) s.marks = s.marks.filter(m=>m.c!==code); s.done = false; saveMarks(); render(); };
+    req.appendChild(r);
+  });
+  const pal = $('pal'); pal.innerHTML = '';
+  const extra = Object.keys(P.cast).concat(Object.keys(P.groups||{})).filter(code => !pre.includes(code));
+  GRP.forEach(([g, test]) => {
+    const list = extra.filter(code => test(castOf(code).k)); if (!list.length) return;
+    const w = document.createElement('div'); w.style.marginBottom = '8px';
+    w.innerHTML = `<div class="hint" style="margin-bottom:4px">${g}</div><div class="chips"></div>`;
+    list.forEach(code => { const b = document.createElement('button'); b.className = 'chip' + (s.marks.some(m=>m.c===code)?' ok':''); b.setAttribute('aria-pressed', armed===code); b.innerHTML = chipIn(code); b.onclick = () => arm(code); w.lastChild.appendChild(b); });
+    pal.appendChild(w);
+  });
+  if (!extra.length && !pre.length) pal.innerHTML = '<p class="hint">Projektet har inga roller än. Lägg till dem under Projekt….</p>';
+  if (document.activeElement !== $('note')) $('note').value = s.note || '';
+  if (sel >= 0 && s.marks[sel]){ $('selbox').hidden = false; const m = s.marks[sel]; $('selinfo').innerHTML = `<span class="chip">${chipIn(m.c)}</span> <span class="hint">i ${FRN[nfOf(c)===1?0:m.f].toLowerCase()}</span>`; } else $('selbox').hidden = true;
+  $('doneB').textContent = s.done ? 'Klar ✓ → nästa' : 'Klar → nästa';
+  $('prevB').disabled = idx===0; $('copyPrev').disabled = idx===0;
+  $('out').textContent = castMap();
+  $('outHint').textContent = P.src === 'bild' ? 'Bifoga bildmanusbilden som @Image1 och sedan sheetsen i den ordning texten anger. Klistra in texten i prompten.' : 'Klistra in i Seedance-prompten före ACTION. @Video1 är klippets animatic, @Image1 startbilden, sedan referensbilderna i den ordning texten anger.';
+}
+function bgFor(c, f){ const u = imgUrl(c), n = nfOf(c); return u ? `background-image:url("${u}");background-size:${n*100}% 100%;background-position:${n>1 ? f*100/(n-1) : 0}% 0` : ''; }
+function renderStage(){
+  const c = cur(), s = st(c.id), stage = $('stage'), n = nfOf(c);
+  if (frame >= n) frame = 0;
+  $('big').setAttribute('style', bgFor(c, frame)); $('big').setAttribute('aria-label', `Bildruta, klipp ${c.id}`);
+  const has = !!imgUrl(c); $('noimg').hidden = has;
+  if (!has){ $('noimgT').textContent = 'Ingen bild för klippet'; $('noimgS').textContent = 'Lägg in animaticen eller bilder under Projekt… → Material.'; $('bNoimg').textContent = 'Öppna Projekt…'; }
+  stage.classList.toggle('arm', !!armed);
+  stage.querySelectorAll('.mk').forEach(e => e.remove());
+  s.marks.forEach((m,i) => {
+    const mf = n===1 ? 0 : m.f;
+    const e = document.createElement('div'); e.className = 'mk' + (mf!==frame ? ' ghost' : '') + (i===sel ? ' sel' : '');
+    e.style.left = (m.x*100)+'%'; e.style.top = (m.y*100)+'%'; e.style.background = kcol(castOf(m.c).k); e.textContent = m.c; e.title = castOf(m.c).sv;
+    if (mf === frame) e.addEventListener('pointerdown', ev => startDrag(ev, i, e));
+    stage.appendChild(e);
+  });
+  const fr = $('frames'); fr.innerHTML = '';
+  if (n > 1) for (let k=0;k<n;k++){
+    const b = document.createElement('button'); b.className = 'fr'; b.setAttribute('aria-pressed', k===frame);
+    const cnt = s.marks.filter(m => m.f===k).length;
+    b.innerHTML = `<div class="pic" style='${bgFor(c,k)}'></div><span>${FRN[k]}</span>${cnt?`<b>${cnt}</b>`:''}`;
+    b.onclick = () => { frame = k; sel = -1; render(); }; fr.appendChild(b);
+  }
+}
+function render(){
+  if (!P || !CL().length){
+    $('cid').textContent = P ? P.name : 'Rollmarkering'; $('cmeta').textContent = ''; $('csv').textContent = '';
+    $('big').removeAttribute('style'); $('frames').innerHTML = ''; $('stage').querySelectorAll('.mk').forEach(e => e.remove());
+    $('noimg').hidden = false; $('side').hidden = true;
+    $('noimgT').textContent = P ? 'Projektet har inga klipp än' : 'Inget projekt än';
+    $('noimgS').textContent = P ? 'Lägg in animaticen under Projekt… → Material, så delas den upp i klipp automatiskt. Eller skriv in klipplistan.' : 'Skapa ett projekt, lägg in animaticen och rollerna – sedan markerar du vem som är vem i varje klipp.';
+    $('bNoimg').textContent = P ? 'Öppna Projekt…' : 'Skapa projekt';
+    renderList(); return;
+  }
+  $('side').hidden = false;
+  const c = cur();
+  $('cid').textContent = 'Klipp ' + c.id;
+  const dur = c.t1 != null && c.t0 != null ? (c.t1 - c.t0) : c.d;
+  $('cmeta').textContent = [c.light, dur ? dur.toFixed(1).replace('.', ',') + ' s' : ''].filter(Boolean).join(' · ');
+  $('csv').textContent = c.sv || '';
+  renderStage(); renderSide(); renderList();
+}
+function go(i){ if (!P || i<0 || i>=CL().length) return; idx = i; frame = 0; sel = -1; armed = null; try{ localStorage.setItem(LS+'-idx-'+pid, String(i)); }catch{} render(); }
+function openProject(id){
+  pid = id; P = id ? projects[id] || null : null;
+  if (P){ P.cast ||= {}; P.clips ||= []; P.groups ||= {}; let i = 0; try { i = +localStorage.getItem(LS+'-idx-'+pid) || 0; } catch {} idx = Math.min(Math.max(0,i), Math.max(0, CL().length-1)); }
+  frame = 0; sel = -1; armed = null; lsSave(); try { localStorage.setItem(LS+'-pid', pid || ''); } catch {} renderProjSel(); render();
+}
+function arm(code){ armed = armed===code ? null : code; sel = -1; renderStage(); renderSide(); }
+
+// ---------- markera ----------
+function pos(ev){ const r = $('stage').getBoundingClientRect(); return {x:Math.min(1,Math.max(0,(ev.clientX-r.left)/r.width)), y:Math.min(1,Math.max(0,(ev.clientY-r.top)/r.height))}; }
+$('stage').addEventListener('pointerdown', ev => {
+  if (!P || !CL().length || ev.target.closest('.noimg') || ev.target.classList.contains('mk')) return;
+  if (!armed){ sel = -1; renderStage(); renderSide(); return; }
+  const s = st(cur().id), p = pos(ev);
+  s.absent = s.absent.filter(x => x!==armed);
+  s.marks.push({c:armed, f:frame, x:+p.x.toFixed(4), y:+p.y.toFixed(4)});
+  sel = s.marks.length - 1; s.done = false;
+  if (!(castOf(armed).multi || castOf(armed).grp)) armed = null;
+  saveMarks(); render();
+});
+function startDrag(ev, i, el){
+  ev.preventDefault(); ev.stopPropagation(); sel = i; armed = null;
+  const s = st(cur().id); let moved = false;
+  el.setPointerCapture(ev.pointerId); el.classList.add('sel');
+  const mv = e => { const p = pos(e); s.marks[i].x = +p.x.toFixed(4); s.marks[i].y = +p.y.toFixed(4); el.style.left = (p.x*100)+'%'; el.style.top = (p.y*100)+'%'; moved = true; };
+  const up = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); if (moved){ s.done = false; saveMarks(); } render(); };
+  el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up);
+}
+function delSel(){ const s = st(cur().id); if (sel<0) return; s.marks.splice(sel,1); sel = -1; s.done = false; saveMarks(); render(); }
+
+// ---------- CAST MAP till Higgsfield ----------
+const where = m => { const h = m.x < 0.34 ? 'left' : m.x > 0.66 ? 'right' : 'center'; const v = m.y < 0.34 ? 'top' : m.y > 0.66 ? 'bottom' : ''; return v ? (h==='center' ? `${v} center` : `${v} ${h}`) : (h==='center' ? 'center' : `${h} side`); };
+function castMap(){
+  const c = cur(), s = st(c.id), n = nfOf(c);
+  const codes = [...new Set(s.marks.map(m => m.c))];
+  const refs = {}, order = [];
+  codes.forEach(code => { const r = castOf(code).ref; if (r && !(r in refs)){ refs[r] = 2 + order.length; order.push(r); } });
+  const L = [];
+  const board = P.src === 'bild';
+  if (order.length) L.push((board ? 'REFERENCES: @Image1 = the storyboard frame of this shot (composition, and who and what is where). ' : 'REFERENCES: @Video1 = the rough animatic of this shot (motion and camera only), @Image1 = the opening frame. ') + order.map(r => `@Image${refs[r]} = ${r}`).join(', ') + '.');
+  L.push(board ? 'CAST MAP (who and what is where in the storyboard frame @Image1):' : 'CAST MAP (who is who in @Video1 and @Image1):');
+  if (!codes.length) L.push('- (no characters or props marked yet)');
+  codes.forEach(code => {
+    const d = castOf(code), ms = s.marks.filter(m => m.c===code).sort((a,b) => a.f-b.f);
+    const name = (d.en || d.sv) + (d.ref ? ' @Image' + refs[d.ref] : '');
+    const byF = {}; ms.forEach(m => (byF[n===1?0:m.f] ||= []).push(m));
+    const fs = Object.keys(byF).map(Number);
+    const cnt = Math.max(...fs.map(f => byF[f].length));
+    const count = cnt > 1 ? `exactly ${cnt} of them, ` : '';
+    const when = f => n > 1 ? ` (${['at the start','in the middle','at the end'][f]} of the shot)` : '';
+    let who;
+    if (cnt > 1){ const f = fs[0]; who = `the figures at ${byF[f].map(m => 'the ' + where(m)).join(', ')}${when(f)}`; }
+    else if (fs.length === 1) who = `the figure at the ${where(byF[fs[0]][0])}${when(fs[0])}`;
+    else { const a = where(byF[fs[0]][0]), b = where(byF[fs[fs.length-1]][0]); who = a === b ? `the figure at the ${a} for the whole shot` : `the figure that starts at the ${a} and moves to the ${b}`; }
+    L.push(`- ${who} = ${count}${name}`);
+  });
+  const gone = s.absent.map(a => castOf(a).en || a);
+  if (gone.length) L.push(`Not in this shot: ${gone.join(', ')}.`);
+  L.push('Do not add any character, boat or prop that is not in this map.');
+  if (s.note) L.push('Note: ' + s.note);
+  return L.join('\n');
+}
+
+// ---------- knappar ----------
+$('delMk').onclick = delSel;
+$('prevB').onclick = () => go(idx-1);
+$('doneB').onclick = () => { const s = st(cur().id); s.done = true; saveMarks(); const n = CL().findIndex((c,i) => i>idx && !marksAll[mkey(c.id)]?.done); if (n >= 0) go(n); else if (idx < CL().length-1) go(idx+1); else render(); };
+$('copyPrev').onclick = () => {
+  const p = marksAll[mkey(CL()[idx-1]?.id)]; if (!p || !p.marks.length){ status('Förra klippet har inga markeringar att kopiera.'); return; }
+  const s = st(cur().id); s.marks = clone(p.marks); s.absent = s.absent.filter(a => !s.marks.some(m => m.c===a)); s.done = false; saveMarks(); render(); status(`Kopierade ${s.marks.length} markeringar från klipp ${CL()[idx-1].id}. Justera dem efter bilden.`);
+};
+function armedBtn(btn, label, fn){ let on = false; btn.onclick = () => { if (!on){ on = true; btn.textContent = 'Klicka igen'; setTimeout(() => { on = false; btn.textContent = label; }, 2400); return; } on = false; btn.textContent = label; fn(); }; }
+armedBtn($('clearAll'), 'Rensa klippet', () => { marksAll[mkey(cur().id)] = blank(); sel = -1; saveMarks(); render(); });
+$('note').addEventListener('input', e => { st(cur().id).note = e.target.value; saveMarks(); $('out').textContent = castMap(); renderList(); });
+$('bCopy').onclick = () => { const t = $('out').textContent; if (NATIVE){ native('copy', {text:t}).then(() => status('CAST MAP är kopierad.')); return; } navigator.clipboard.writeText(t).then(() => status('CAST MAP är kopierad.'), () => { const r = document.createRange(); r.selectNodeContents($('out')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); status('Markerad – kopiera med Cmd+C.'); }); };
+$('fAll').onclick = () => { filter = 'all'; $('fAll').setAttribute('aria-pressed', true); $('fTodo').setAttribute('aria-pressed', false); renderList(); };
+$('fTodo').onclick = () => { filter = 'todo'; $('fTodo').setAttribute('aria-pressed', true); $('fAll').setAttribute('aria-pressed', false); renderList(); };
+$('proj').onchange = e => { if (e.target.value) openProject(e.target.value); };
+document.addEventListener('keydown', e => {
+  if (['TEXTAREA','INPUT','SELECT'].includes(e.target.tagName) || $('dlg').open || !P || !CL().length) return;
+  if (['1','2','3'].includes(e.key) && +e.key <= nfOf(cur())){ frame = +e.key-1; sel = -1; render(); }
+  else if ((e.key==='Delete' || e.key==='Backspace') && sel>=0){ e.preventDefault(); delSel(); }
+  else if (e.key==='Enter' && !e.target.closest('button')) $('doneB').click();
+  else if (e.key==='Escape'){ armed = null; sel = -1; render(); }
+  else if (e.key==='ArrowDown' && e.altKey) go(idx+1);
+  else if (e.key==='ArrowUp' && e.altKey) go(idx-1);
+});
+
+// ---------- projekt ----------
+function newProject(name){
+  name = name || 'Nytt projekt'; let id = slug(name), i = 2; while (projects[id]) id = slug(name) + '-' + i++;
+  projects[id] = {name, cast:{}, groups:{}, clips:[]};
+  openProject(id); saveProject(); openDlg();
+}
+function openDlg(){ if (!P) return newProject(); fillDlg(); if (!$('dlg').open) $('dlg').showModal(); }
+$('bProj').onclick = openDlg; $('bNoimg').onclick = openDlg;
+$('dClose').onclick = () => $('dlg').close();
+$('dlg').addEventListener('close', () => { renderProjSel(); render(); });
+function fillDlg(){
+  $('dName').value = P.name || '';
+  const kOpts = Object.entries(KINDS).map(([k,v]) => `<option value="${k}">${v[0]}</option>`).join('');
+  $('dCast').innerHTML = Object.entries(P.cast).map(([c,d]) => `<tr data-c="${esc(c)}">
+    <td><input type="text" class="w-code" data-f="code" value="${esc(c)}" aria-label="Kod"></td>
+    <td><input type="text" data-f="sv" value="${esc(d.sv)}" aria-label="Namn"></td>
+    <td><input type="text" data-f="en" value="${esc(d.en)}" aria-label="Engelska till prompten"></td>
+    <td><select class="in" data-f="k" aria-label="Typ">${kOpts}</select></td>
+    <td><input type="color" data-f="c" value="${esc(d.c || '#888888')}" aria-label="Färg i Scenplanering"></td>
+    <td><div class="sheet">${d.img ? `<span class="th" data-view style="background-image:url('${esc(sheetSrc(d.img))}')" title="Visa större"></span>` : '<span class="th none">ingen</span>'}
+      <input type="text" data-f="ref" value="${esc(d.ref||'')}" placeholder="filnamn i Higgsfield" aria-label="Sheetens filnamn"><button class="btn sm" data-pick>${d.img ? 'Byt…' : 'Bild…'}</button>${d.img ? '<button class="btn sm" data-noimg aria-label="Ta bort bilden">✕</button>' : ''}</div></td>
+    <td><input type="checkbox" data-f="multi" ${d.multi?'checked':''} aria-label="Kan förekomma flera gånger"></td>
+    <td><button class="btn sm" data-del aria-label="Ta bort rollen">✕</button></td></tr>`).join('');
+  $('dCast').querySelectorAll('tr').forEach(tr => { tr.querySelector('[data-f=k]').value = P.cast[tr.dataset.c].k; });
+  $('dGroups').value = Object.entries(P.groups||{}).map(([g,l]) => `${g} = ${l.join(', ')}`).join('; ');
+  $('dClips').value = CL().map(c => [c.id, c.sv||'', (c.pre||[]).join(', '), c.light||'', c.t0!=null ? `${(+c.t0).toFixed(2)}–${(+c.t1).toFixed(2)}` : ''].join(' | ')).join('\n');
+  $('dInfo').textContent = `${CL().length} klipp, ${CL().filter(c => imgUrl(c)).length} med bild`;
+}
+const afterEdit = () => { saveProject(); render(); };
+$('dName').onchange = e => { P.name = e.target.value.trim() || P.name; saveProject(); renderProjSel(); };
+$('dNew').onclick = () => newProject();
+$('dCast').addEventListener('change', e => {
+  const tr = e.target.closest('tr'), c = tr.dataset.c, f = e.target.dataset.f, d = P.cast[c]; if (!f || !d) return;
+  if (f === 'code'){ const nc = e.target.value.trim().toUpperCase(); if (!nc || P.cast[nc]){ e.target.value = c; return; }
+    P.cast[nc] = d; delete P.cast[c]; CL().forEach(x => x.pre = (x.pre||[]).map(y => y===c ? nc : y));
+    Object.keys(marksAll).filter(k => k.startsWith(pid+'__')).forEach(k => { const s = marksAll[k]; let ch = false; s.marks.forEach(m => { if (m.c===c){ m.c = nc; ch = true; } }); s.absent = s.absent.map(a => a===c ? (ch = true, nc) : a); if (ch) saveMarks(k.slice(pid.length+2)); });
+    tr.dataset.c = nc; e.target.value = nc; }
+  else if (f === 'multi') d.multi = e.target.checked;
+  else if (f === 'k'){ d.k = e.target.value; d.h = KINDS[d.k][1]; }
+  else d[f] = e.target.value.trim();
+  afterEdit();
+});
+$('imgPick').onchange = async e => {
+  const f = e.target.files[0], fn = pickFor; pickFor = null; if (!f || !fn) return;
+  try { status('Sparar bilden…'); fn(await putSheet(f, f.name), f.name); status('Sheeten är tillagd.'); }
+  catch(err){ status('Bilden kunde inte sparas: ' + (err.message || err), true); }
+};
+$('iClose').onclick = () => $('dlgImg').close();
+$('dlgImg').addEventListener('click', e => { if (e.target === $('dlgImg') || e.target === $('iImg')) $('dlgImg').close(); });
+$('dCast').addEventListener('click', e => {
+  const c0 = e.target.closest('tr')?.dataset.c, d0 = c0 && P.cast[c0];
+  if (d0 && e.target.matches('[data-view]')){ showImage(sheetSrc(d0.img), d0.sv); return; }
+  if (d0 && e.target.matches('[data-pick]')){ pickImage((v, fname) => { d0.img = v; if (!d0.ref) d0.ref = fname; fillDlg(); afterEdit(); }); return; }
+  if (d0 && e.target.matches('[data-noimg]')){ delete d0.img; fillDlg(); afterEdit(); return; }
+  if (!e.target.matches('[data-del]')) return; delete P.cast[e.target.closest('tr').dataset.c]; fillDlg(); afterEdit(); });
+$('dAddCast').onclick = () => { let i = 1, c; do { c = 'R' + i++; } while (P.cast[c]); P.cast[c] = {sv:'Ny roll', en:'a character', k:'h', h:1.8, c:'#D2683E', ref:''}; fillDlg(); afterEdit(); };
+$('dGroups').onchange = e => { const g = {}; e.target.value.split(';').forEach(p => { const [k, v] = p.split('='); if (k && v) g[k.trim().toUpperCase()] = v.split(',').map(x => x.trim().toUpperCase()).filter(Boolean); }); P.groups = g; afterEdit(); };
+function parseClips(text){
+  const out = [];
+  text.split('\n').map(l => l.trim()).filter(Boolean).forEach(l => {
+    const [id, sv, pre, light, tt] = l.split('|').map(x => (x||'').trim()); if (!id) return;
+    const old = CL().find(c => c.id===id) || {};
+    const m = (tt||'').match(/([\d.]+)\s*[–-]\s*([\d.]+)/);
+    out.push({...old, id, sv:sv||'', pre:(pre||'').split(/[,\s]+/).map(x => x.trim().toUpperCase()).filter(Boolean), light:light||'', ...(m ? {t0:+m[1], t1:+m[2]} : {})});
+  });
+  return out;
+}
+$('dApply').onclick = () => { const out = parseClips($('dClips').value); if (!out.length){ $('dInfo').textContent = 'Inga klipp hittades.'; return; } P.clips = out; idx = Math.min(idx, out.length-1); saveProject(); fillDlg(); render(); $('dInfo').textContent = `${out.length} klipp sparade.`; };
+
+// ---------- export/import ----------
+async function offerFile(blob, fname, ok){
+  if (NATIVE){
+    try { const saved = await native('saveFile', {name:fname, b64:await blobB64(blob)}); status(saved ? ok : 'Sparandet avbröts.'); } catch(e){ status('Filen kunde inte sparas: ' + e.message, true); }
+    return;
+  }
+  const dl = window.claude?.use ? await window.claude.use('downloads') : null;
+  if (dl){ try { await dl.save({filename:fname, data:blob}); status(ok); } catch(e){ status(e?.code==='declined' ? 'Sparandet avbröts.' : 'Filen kunde inte sparas här.', e?.code!=='declined'); } }
+  else { const u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(u), 3000); status(ok); }
+}
+const projMarks = () => { const o = {}; Object.keys(marksAll).filter(k => k.startsWith(pid+'__')).forEach(k => o[k.slice(pid.length+2)] = marksAll[k]); return o; };
+$('dExport').onclick = async () => offerFile(new Blob([JSON.stringify({format:'rollmarkering/1', id:pid, project:{...P, cast:await embedSheets(P.cast)}, marks:projMarks()}, null, 1)], {type:'application/json'}), slug(P.name) + '_rollmarkering.json', 'Projektfilen är sparad.');
+$('dScen').onclick = async () => {
+  // Scenplaneringens format: roller och skott, med vilka roller som faktiskt markerades i varje klipp.
+  const cast = {}, emb = await embedSheets(P.cast); Object.entries(P.cast).forEach(([c,d]) => { cast[c] = {sv:d.sv, en:d.en, k:d.k||'crate', h:d.h || KINDS[d.k||'crate'][1], c:d.c || kcol(d.k), ref:d.ref||'', multi:!!d.multi}; if (emb[c]?.img) cast[c].img = emb[c].img; });
+  const shots = CL().map(c => { const s = marksAll[mkey(c.id)]; const pre = s && s.marks.length ? [...new Set(s.marks.map(m => m.c))] : (c.pre||[]).filter(x => !(s?.absent||[]).includes(x)); return {id:c.id, sv:c.sv||'', sc:'huvud', pre, light:c.light||''}; });
+  const project = {name:P.name, cast, groups:P.groups||{}, sets:{huvud:{sv:'Huvudmiljö', base:'mark', pieces:[]}}, shots, style:P.style||''};
+  offerFile(new Blob([JSON.stringify({format:'scenplanering/1', id:pid, project, shots:{}}, null, 1)], {type:'application/json'}), slug(P.name) + '_till_scenplanering.json', 'Filen för Scenplanering är sparad. Importera den där under Projekt….');
+};
+$('dImport').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    let proj, marks = {};
+    if (j.format === 'scenplanering/1' && j.project){ const p = j.project; proj = {name:p.name, cast:p.cast||{}, groups:p.groups||{}, style:p.style||'', clips:(p.shots||[]).map(s => ({id:s.id, sv:s.sv||'', pre:s.pre||[], light:s.light||''}))}; }
+    else if (j.project?.clips){ proj = j.project; marks = j.marks || {}; }
+    else throw new Error('format');
+    await storeEmbedded(proj.cast);
+    let id = j.id || slug(proj.name); if (projects[id] && projects[id].name !== proj.name) id += '-' + uid();
+    projects[id] = proj; pid = id; P = proj; Object.entries(marks).forEach(([cid, s]) => { marksAll[id+'__'+cid] = s; saveMarks(cid); });
+    saveProject(); openProject(id); fillDlg(); status('Projektet är importerat.');
+  } catch { $('dInfo').textContent = 'Filen kunde inte läsas som projektfil.'; }
+};
+armedBtn($('dDelProj'), 'Radera projektet', async () => {
+  const id = pid, keys = Object.keys(marksAll).filter(k => k.startsWith(id+'__'));
+  delete projects[id]; keys.forEach(k => delete marksAll[k]);
+  if (NATIVE){ clearTimeout(writeT[id]); try { await native('remove', {name:id}); } catch {} }
+  if (db){ try { await db.doc('projekt/'+id).delete(); for (const k of keys) await db.doc('markering/'+k).delete(); } catch {} }
+  $('dlg').close(); openProject(Object.keys(projects)[0] || null); status('Projektet är raderat.');
+});
+
+// ---------- material: bilder ----------
+function info(t, p){ $('mInfo').textContent = t; if (p != null) $('mBar').style.width = (p*100).toFixed(1) + '%'; }
+async function storeImage(c, blob, nf){
+  c.nf = nf;
+  if (NATIVE){
+    try { const path = await native('writeImage', {project:pid, name:String(c.id), b64:await blobB64(blob)}); c.img = 'lokal:' + path + '?v=' + Date.now(); delete localImg[mkey(c.id)]; return true; }
+    catch(e){ info('Bilden kunde inte sparas: ' + e.message); }
+    localImg[mkey(c.id)] = URL.createObjectURL(blob); return false;
+  }
+  if (assets){
+    try { const r = await assets.upload(blob, {type:'image/jpeg'}); c.img = r.id; delete localImg[mkey(c.id)]; return true; }
+    catch(e){ if (e?.code === 'store_unavailable'){ try { const r = await assets.upload(blob, {type:'image/jpeg'}); c.img = r.id; return true; } catch {} } info('Bilden kunde inte laddas upp (' + (e?.code||'fel') + ').'); }
+  }
+  localImg[mkey(c.id)] = URL.createObjectURL(blob); return false;
+}
+const idFromName = n => { const m = n.replace(/\.[^.]+$/,'').match(/(\d+[a-zA-Z]?)(?:[_-](\d))?$/) || n.match(/(\d+[a-zA-Z]?)/); return m ? {id:m[1].toUpperCase().replace(/^(\d+)/, d => d.padStart(3,'0')), part:m[2] ? +m[2] : 0} : null; };
+function loadImg(file){ return new Promise((ok, no) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { ok(im); setTimeout(() => URL.revokeObjectURL(u), 1000); }; im.onerror = no; im.src = u; }); }
+async function strip(sources, w = 640, h = 360){
+  const c = document.createElement('canvas'); c.width = w*sources.length; c.height = h; const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0,0,c.width,h);
+  sources.forEach((s,i) => { const sw = s.videoWidth || s.naturalWidth, sh = s.videoHeight || s.naturalHeight, k = Math.min(w/sw, h/sh), dw = sw*k, dh = sh*k; x.drawImage(s, i*w + (w-dw)/2, (h-dh)/2, dw, dh); });
+  return new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.72));
+}
+$('mImgs').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+  const by = {}; let skipped = 0;
+  files.forEach(f => { const r = idFromName(f.name); if (!r){ skipped++; return; } (by[r.id] ||= []).push({f, part:r.part}); });
+  const ids = Object.keys(by).sort((a,b) => a.localeCompare(b, 'sv', {numeric:true})); let n = 0;
+  for (const id of ids){
+    let c = CL().find(x => x.id===id); if (!c){ c = {id, sv:'', pre:[], light:''}; CL().push(c); }
+    const list = by[id].sort((a,b) => a.part-b.part).slice(0,3), ims = [];
+    for (const it of list) ims.push(await loadImg(it.f));
+    await storeImage(c, await strip(ims), ims.length); n++; info(`Bilder: ${n} av ${ids.length} klipp`, n/ids.length);
+  }
+  CL().sort((a,b) => a.id.localeCompare(b.id, 'sv', {numeric:true}));
+  saveProject(); fillDlg(); render();
+  info(`${n} klipp har fått bilder.` + (skipped ? ` ${skipped} filer saknade klippnummer i namnet.` : '') + (assets ? '' : ' Bilderna finns bara i den här fliken – öppna verktyget på claude.ai för att spara dem.'), 1);
+};
+
+// ---------- material: bildmanus ----------
+// En bild per klipp i hög upplösning. Klippnummer i filnamnet styr; annars filnamnsordning på klipplistan.
+$('mBoard').onchange = async e => {
+  const files = [...e.target.files].sort((a,b) => a.name.localeCompare(b.name, 'sv', {numeric:true})); e.target.value = ''; if (!files.length) return;
+  const numbered = files.every(f => idFromName(f.name));
+  let n = 0;
+  for (let i=0; i<files.length; i++){
+    const f = files[i], id = numbered ? idFromName(f.name).id : (CL()[i]?.id || String(i+1).padStart(3,'0'));
+    let c = CL().find(x => x.id===id); if (!c){ c = {id, sv:'', pre:[], light:''}; CL().push(c); }
+    try { await storeImage(c, await strip([await loadImg(f)], 1600, 900), 1); n++; } catch {}
+    info(`Bildmanus: ${n} av ${files.length} bilder`, (i+1)/files.length);
+  }
+  CL().sort((a,b) => a.id.localeCompare(b.id, 'sv', {numeric:true}));
+  P.src = 'bild'; saveProject(); fillDlg(); render();
+  info(`${n} bilder ur bildmanuset är inlagda, en per klipp` + (numbered ? ' (efter klippnumret i filnamnet).' : ' (i filnamnsordning).') + ' Lägg till sheets för rollerna nedan och markera sedan vem som är vem.', 1);
+};
+
+// ---------- material: video ----------
+const V = $('mPv'); let scanCache = null;
+$('mSens').oninput = e => { $('oSens').textContent = e.target.value; };
+const seek = t => new Promise(ok => { const h = () => { V.removeEventListener('seeked', h); ok(); }; V.addEventListener('seeked', h); V.currentTime = Math.min(t, Math.max(0, V.duration - 0.05)); });
+$('mVideo').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  V.hidden = false; V.src = URL.createObjectURL(f);
+  await new Promise((ok, no) => { V.onloadedmetadata = ok; V.onerror = () => no(); }).catch(() => null);
+  if (!V.duration || !isFinite(V.duration)){ info('Videon kunde inte läsas. Prova att exportera den som mp4 (H.264).'); return; }
+  const D = V.duration; let cuts;
+  const useList = $('mUseList').checked && CL().some(c => c.t0 != null);
+  if (useList){ cuts = CL().filter(c => c.t0 != null).map(c => ({c, t0:+c.t0, t1:+c.t1})); }
+  else {
+    // Klippdetektering: jämför små gråskalebilder 6 gånger per sekund.
+    // Samma fil igen (t.ex. med ny gräns) återanvänder mätningen och delar bara om.
+    const fkey = f.name + ':' + f.size, thr = +$('mSens').value;
+    if (!scanCache || scanCache.key !== fkey){
+      const cw = 48, ch = 27, cv = document.createElement('canvas'); cv.width = cw; cv.height = ch; const x = cv.getContext('2d', {willReadFrequently:true});
+      const diffs = []; let prev = null;
+      for (let t = 0; t < D; t += 1/6){
+        await seek(t); x.drawImage(V, 0, 0, cw, ch); const d = x.getImageData(0,0,cw,ch).data, g = new Float32Array(cw*ch);
+        for (let i=0;i<g.length;i++) g[i] = d[i*4]*0.3 + d[i*4+1]*0.59 + d[i*4+2]*0.11;
+        if (prev){ let s = 0; for (let i=0;i<g.length;i++) s += Math.abs(g[i]-prev[i]); diffs.push([+t.toFixed(3), s/g.length]); }
+        prev = g; info(`Letar klippbyten… ${Math.round(t)} av ${Math.round(D)} s`, t/D*0.5);
+      }
+      scanCache = {key:fkey, diffs};
+    }
+    const at = [0]; scanCache.diffs.forEach(([t, s]) => { if (s > thr && t - at[at.length-1] > 0.6) at.push(t); });
+    at.push(D);
+    const old = CL(), used = new Set();
+    cuts = at.slice(0,-1).map((t0,i) => {
+      const t1 = at[i+1];
+      // Matcha mot befintliga klipp i samma ordning, så att beskrivningar och roller behålls.
+      let c = old[i] && !used.has(old[i].id) ? old[i] : null;
+      if (!c) c = {id:String(i+1).padStart(3,'0'), sv:'', pre:[], light:''};
+      used.add(c.id); return {c, t0, t1};
+    });
+    P.clips = cuts.map(k => k.c);
+  }
+  let n = 0;
+  for (const k of cuts){
+    k.c.t0 = +k.t0.toFixed(2); k.c.t1 = +k.t1.toFixed(2); const len = k.t1 - k.t0, ims = [];
+    for (const p of [0.08, 0.5, 0.92]){
+      await seek(k.t0 + len*p); const c = document.createElement('canvas'); c.width = 640; c.height = 360;
+      const sw = V.videoWidth, sh = V.videoHeight, s = Math.min(640/sw, 360/sh); c.getContext('2d').drawImage(V, (640-sw*s)/2, (360-sh*s)/2, sw*s, sh*s); ims.push(c);
+    }
+    const sc = document.createElement('canvas'); sc.width = 1920; sc.height = 360; const sx = sc.getContext('2d'); ims.forEach((c,i) => sx.drawImage(c, i*640, 0));
+    const blob = await new Promise(ok => sc.toBlob(ok, 'image/jpeg', 0.72));
+    await storeImage(k.c, blob, 3); n++; info(`Tar bildrutor och sparar… klipp ${n} av ${cuts.length}`, 0.5 + n/cuts.length*0.5);
+    if (n % 10 === 0) saveProject();
+  }
+  saveProject(); idx = 0; fillDlg(); render();
+  P.src = 'video'; saveProject();
+  info(`${cuts.length} klipp med tre bildrutor vardera.` + (useList ? '' : ' Kontrollera klipplistan nedan och justera känsligheten om klippbytena blev fel.') + (assets ? '' : ' Bilderna finns bara i den här fliken – öppna verktyget på claude.ai för att spara dem.'), 1);
+};
+
+// ---------- start ----------
+async function showFolder(){ if (!NATIVE) return; $('dFolderRow').hidden = false; $('dFolder').textContent = await native('folder'); }
+if (NATIVE){
+  $('dShowFolder').onclick = () => native('openFolder');
+  $('dPickFolder').onclick = async () => { const p = await native('chooseFolder'); if (!p) return; $('dlg').close(); await loadNative(); status('Projektmappen är nu ' + p + '.'); };
+}
+async function loadNative(){
+  const all = await native('list') || {}; projects = {}; marksAll = {};
+  Object.entries(all).forEach(([file, j]) => { if (!j?.project) return; const id = j.id || file; projects[id] = j.project; Object.entries(j.marks||{}).forEach(([c,v]) => marksAll[id+'__'+c] = v); });
+  let last = null; try { last = localStorage.getItem(LS+'-pid'); } catch {}
+  openProject(projects[last] ? last : Object.keys(projects)[0] || null); showFolder();
+  if (!Object.keys(projects).length) status('Inga projekt i mappen än. Skapa ett under Projekt… eller importera en projektfil.');
+}
+(async () => {
+  if (NATIVE){ assets = {}; await loadNative(); return; }
+  const ls = lsLoad(); projects = ls.projects || {}; marksAll = ls.marks || {};
+  if (window.SEED && !projects[window.SEED.id]){ projects[window.SEED.id] = window.SEED.project; Object.entries(window.SEED.marks||{}).forEach(([c,v]) => marksAll[window.SEED.id+'__'+c] = v); }
+  openProject(projects[ls.pid] ? ls.pid : Object.keys(projects)[0] || null);
+  [db, assets] = window.claude?.use ? await Promise.all([window.claude.use('db'), window.claude.use('assets')]) : [null, null];
+  if (!db){ status('Delad lagring saknas här. Allt sparas i den här webbläsaren – använd Projekt… → Exportera för att flytta det.'); return; }
+  let first = true;
+  db.collection('projekt').onSnapshot(snap => {
+    let ch = false;
+    snap.docs.forEach(d => { if (pend.has('p:'+d.id)) return; const {at, ...v} = d.data(); projects[d.id] = v; ch = true; });
+    lsSave();
+    if (first){ first = false; if (!P || !projects[pid]){ openProject(Object.keys(projects)[0] || null); return; } }
+    if (ch && !$('dlg').open){ const k = idx; P = projects[pid] || null; if (!P){ openProject(Object.keys(projects)[0] || null); return; } idx = Math.min(k, Math.max(0, CL().length-1)); renderProjSel(); render(); }
+    else renderProjSel();
+  }, e => status('Synken stoppade ('+(e.code||'fel')+'). Ladda om sidan.', true));
+  db.collection('markering').onSnapshot(snap => {
+    let ch = false;
+    snap.docs.forEach(d => { if (pend.has('m:'+d.id)) return; const v = d.data(); marksAll[d.id] = {marks:v.marks||[], absent:v.absent||[], done:!!v.done, note:v.note||''}; ch = true; });
+    if (ch){ lsSave(); render(); }
+  }, e => status('Synken stoppade ('+(e.code||'fel')+'). Ladda om sidan.', true));
+})();
+</script>
